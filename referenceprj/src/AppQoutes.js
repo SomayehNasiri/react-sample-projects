@@ -1,22 +1,48 @@
-import React,{useState} from "react";
+import React,{useState,useEffect} from "react";
 import Categories from "./components/Categories";
 
 import Quote from "./components/Quote";
-import { getCategories,getQoute } from "./qoutesService";
+import { getCategories,getQuote } from "./qoutesService";
 
 const AppQoutes = () => {
-    const [categories,setCategories]=useState([])
+  const [categories, setCategories] = useState([]);
+  const [selected, setSelected] = useState("");
+  const [quote, setQuote] = useState({});
+
+  // Fetch categories when the app is mounted
+  useEffect(() => {
+    getCategories().then(categs => {
+      if (categs.length > 0) {
+        setCategories(categs);
+        setSelected(categs[0]);
+      }
+    });
+  }, []);
+
+  // When the category is changed, a new quote is fetched
+  useEffect(() => {
+    selected && getQuote(selected).then(q => setQuote(q));
+  }, [selected]);
+
+  // When the category is changed, the timer is reset
+  // When the app is unmounted, the timer instance is cleaned up
+  useEffect(() => {
+    let timer = setInterval(() => {
+      getQuote(selected).then(q => setQuote(q));
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [selected]);
+
   return (
     <div className="quote-master">
       <Categories
-        categories={["Brainy", "Funny"]}
-        selected={"Funny"}
-        onSelected={category => {}}
+        categories={categories}
+        selected={selected}
+        onSelected={category => setSelected(category)}
       />
-      <Quote
-        quote={"The first five days after the weekend are always the hardest."}
-        author={"A Lazy Cat"}
-      />
+
+      {quote && <Quote quote={quote.quote} author={quote.author} />}
     </div>
   );
 };
